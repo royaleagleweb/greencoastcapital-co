@@ -116,7 +116,7 @@
      submission, copy your random alias from the FormSubmit dashboard
      (e.g. "a1b2c3d4e5...") and use that string here instead of the raw email.
      Until a real address is set, forms still show success but do NOT send. */
-  var FORM_EMAIL = "YOUR_EMAIL@EXAMPLE.COM";
+  var FORM_EMAIL = "roy@royaleagleweb.com";
   var formKeyReady = FORM_EMAIL && !/^YOUR_/.test(FORM_EMAIL);
 
   function sendForm(formData, opts, onDone) {
