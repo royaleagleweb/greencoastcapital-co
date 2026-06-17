@@ -107,24 +107,33 @@
     });
   });
 
-  /* ---------- Form delivery (Web3Forms) ----------
-     Get a FREE access key at https://web3forms.com — enter the email where you
-     want submissions delivered, and the key is emailed to you instantly.
-     Paste it below between the quotes. Until a real key is set, forms still
-     show the success message but do NOT actually send anywhere. */
-  var FORM_ACCESS_KEY = "YOUR_WEB3FORMS_ACCESS_KEY";
-  var FORM_ENDPOINT = "https://api.web3forms.com/submit";
-  var formKeyReady = FORM_ACCESS_KEY && !/^YOUR_/.test(FORM_ACCESS_KEY);
+  /* ---------- Form delivery (FormSubmit.co) ----------
+     No API key needed. Put the email address where you want submissions
+     delivered in FORM_EMAIL below. The FIRST time a form is submitted,
+     FormSubmit emails that address a one-time activation link — click it once
+     and delivery is on for good.
+     Privacy tip: to keep your address out of the public page source, do one
+     submission, copy your random alias from the FormSubmit dashboard
+     (e.g. "a1b2c3d4e5...") and use that string here instead of the raw email.
+     Until a real address is set, forms still show success but do NOT send. */
+  var FORM_EMAIL = "YOUR_EMAIL@EXAMPLE.COM";
+  var formKeyReady = FORM_EMAIL && !/^YOUR_/.test(FORM_EMAIL);
 
   function sendForm(formData, opts, onDone) {
-    // Graceful fallback: no real key yet → behave like the old demo (no send).
+    // Graceful fallback: no real address yet → behave like the old demo (no send).
     if (!formKeyReady) { onDone(true); return; }
-    formData.append("access_key", FORM_ACCESS_KEY);
-    formData.append("from_name", "Green Coast Capital — greencoastcapital.co");
-    if (opts && opts.subject) formData.append("subject", opts.subject);
-    fetch(FORM_ENDPOINT, { method: "POST", body: formData })
+    formData.append("_subject", (opts && opts.subject) || "New submission — greencoastcapital.co");
+    formData.append("_template", "table");
+    formData.append("_captcha", "false");
+    var payload = {};
+    formData.forEach(function (v, k) { payload[k] = v; });
+    fetch("https://formsubmit.co/ajax/" + encodeURIComponent(FORM_EMAIL), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(payload)
+    })
       .then(function (r) { return r.json(); })
-      .then(function (j) { onDone(!!(j && j.success)); })
+      .then(function (j) { onDone(!!(j && (j.success === true || j.success === "true"))); })
       .catch(function () { onDone(false); });
   }
 
