@@ -107,7 +107,28 @@
     });
   });
 
-  /* ---------- Front-end-only forms: show success, send nowhere ---------- */
+  /* ---------- Form delivery (Web3Forms) ----------
+     Get a FREE access key at https://web3forms.com — enter the email where you
+     want submissions delivered, and the key is emailed to you instantly.
+     Paste it below between the quotes. Until a real key is set, forms still
+     show the success message but do NOT actually send anywhere. */
+  var FORM_ACCESS_KEY = "YOUR_WEB3FORMS_ACCESS_KEY";
+  var FORM_ENDPOINT = "https://api.web3forms.com/submit";
+  var formKeyReady = FORM_ACCESS_KEY && !/^YOUR_/.test(FORM_ACCESS_KEY);
+
+  function sendForm(formData, opts, onDone) {
+    // Graceful fallback: no real key yet → behave like the old demo (no send).
+    if (!formKeyReady) { onDone(true); return; }
+    formData.append("access_key", FORM_ACCESS_KEY);
+    formData.append("from_name", "Green Coast Capital — greencoastcapital.co");
+    if (opts && opts.subject) formData.append("subject", opts.subject);
+    fetch(FORM_ENDPOINT, { method: "POST", body: formData })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { onDone(!!(j && j.success)); })
+      .catch(function () { onDone(false); });
+  }
+
+  /* ---------- Contact & quote forms ---------- */
   document.querySelectorAll("form[data-mock]").forEach(function (form) {
     form.addEventListener("submit", function (e) {
       e.preventDefault();
@@ -117,14 +138,28 @@
       }
       var successId = form.getAttribute("data-success");
       var success = successId ? document.getElementById(successId) : null;
-      if (success) {
-        form.style.display = "none";
-        success.classList.add("show");
-        success.setAttribute("tabindex", "-1");
-        success.focus();
-        success.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-      form.reset();
+      var submitBtn = form.querySelector('[type="submit"]');
+      var btnLabel = submitBtn ? submitBtn.textContent : "";
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "Sending…"; }
+      var subjField = form.querySelector('[name="subject"]');
+      var subject = (subjField && subjField.value) ||
+        ("New " + (successId === "apply-success" ? "funding request" : "contact message") +
+         " — greencoastcapital.co");
+      sendForm(new FormData(form), { subject: subject }, function (ok) {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = btnLabel; }
+        if (!ok) {
+          alert("Sorry — your message couldn't be sent right now. Please call us or try again in a moment.");
+          return;
+        }
+        if (success) {
+          form.style.display = "none";
+          success.classList.add("show");
+          success.setAttribute("tabindex", "-1");
+          success.focus();
+          success.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        form.reset();
+      });
     });
   });
 
@@ -380,12 +415,29 @@
     if (submitBtn) submitBtn.addEventListener("click", function (e) {
       e.preventDefault();
       if (!validateStep(current)) return;
-      if (formCore) formCore.style.display = "none";
-      if (success) {
-        success.hidden = false;
-        success.setAttribute("tabindex", "-1");
-        success.focus();
-      }
+      var lbl = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting…";
+      var fd = new FormData();
+      wiz.querySelectorAll("input, select, textarea").forEach(function (inp) {
+        if (!inp.name) return;
+        if ((inp.type === "checkbox" || inp.type === "radio") && !inp.checked) return;
+        fd.append(inp.name, inp.value);
+      });
+      sendForm(fd, { subject: "New funding application — greencoastcapital.co" }, function (ok) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = lbl;
+        if (!ok) {
+          alert("Sorry — your application couldn't be submitted right now. Please call us or try again in a moment.");
+          return;
+        }
+        if (formCore) formCore.style.display = "none";
+        if (success) {
+          success.hidden = false;
+          success.setAttribute("tabindex", "-1");
+          success.focus();
+        }
+      });
     });
     // clear error on input
     wiz.querySelectorAll("input, select").forEach(function (input) {
