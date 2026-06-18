@@ -120,7 +120,18 @@
   var formKeyReady = FORM_EMAIL && !/^YOUR_/.test(FORM_EMAIL);
 
   function sendForm(formData, opts, onDone) {
-    // Graceful fallback: no real address yet → behave like the old demo (no send).
+    // WhatsApp notification to the owner (non-blocking; ignores failures).
+    // Served by the /api/whatsapp Cloudflare Pages Function; no-ops until WA_PHONE/WA_APIKEY are set.
+    try {
+      var wa = {};
+      formData.forEach(function (v, k) { wa[k] = v; });
+      fetch("/api/whatsapp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(wa)
+      });
+    } catch (e) {}
+    // Graceful fallback: no real address yet → behave like the old demo (no email send).
     if (!formKeyReady) { onDone(true); return; }
     formData.append("_subject", (opts && opts.subject) || "New submission — greencoastcapital.co");
     formData.append("_template", "table");
